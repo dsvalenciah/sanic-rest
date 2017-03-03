@@ -26,13 +26,12 @@ class TaskList(HTTPMethodView):
         Create a task out of the post json body.
         """
         print(request.json)
-        host = request.headers.get('Host')
         uid = uuid4().hex
+        title = request.json.get('title')
         task = {
+            'title': title,
             'id': uid,
-            'title': 'Comprar leche',
             'done': False,
-            'url': f'http://{host}/tasks/{uid}'
         }
         DATOS.update({uid: task})
         return json(task)
@@ -77,6 +76,12 @@ class Task(HTTPMethodView):
         })
         DATOS.update({task['id']: task})
         return json(task)
+
+    def delete(self, request, task):
+        """
+        Delete a task from the database.
+        """
+        return json({})
 
 
 app.add_route(TaskList.as_view(), '/tasks')
