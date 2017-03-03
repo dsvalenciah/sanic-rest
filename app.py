@@ -3,7 +3,7 @@
 # external libraries
 from sanic import Sanic
 from sanic.views import HTTPMethodView
-from sanic.response import json
+from sanic.response import json, text
 from uuid import uuid4
 
 app = Sanic()
@@ -28,13 +28,20 @@ class TaskList(HTTPMethodView):
         print(request.json)
         uid = uuid4().hex
         title = request.json.get('title')
-        task = {
-            'title': title,
-            'id': uid,
-            'done': False,
-        }
-        DATOS.update({uid: task})
-        return json(task)
+        if title:
+            task = {
+                'title': title,
+                'id': uid,
+                'done': False,
+            }
+            DATOS.update({uid: task})
+            return json(task)
+        return json({
+            'error': {
+                'code': 'TITLE_NOT_FOUND',
+                'message': 'That title was not found',
+            }
+        }, status=404)
 
     def get(self, request):
         """
