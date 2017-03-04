@@ -1,10 +1,11 @@
 # bultin library
+from uuid import uuid4
 
 # external libraries
 from sanic import Sanic
 from sanic.views import HTTPMethodView
-from sanic.response import json, text
-from uuid import uuid4
+from sanic.response import json
+from sanic_cors import CORS
 
 app = Sanic()
 
@@ -26,22 +27,24 @@ class TaskList(HTTPMethodView):
         Create a task out of the post json body.
         """
         print(request.json)
-        uid = uuid4().hex
         title = request.json.get('title')
-        if title:
-            task = {
-                'title': title,
-                'id': uid,
-                'done': False,
-            }
-            DATOS.update({uid: task})
-            return json(task)
-        return json({
-            'error': {
-                'code': 'TITLE_NOT_FOUND',
-                'message': 'That title was not found',
-            }
-        }, status=404)
+
+        if not title:
+            return json({
+                'error': {
+                    'code': 'TITLE_REQUIRED',
+                    'message': 'The title field is required',
+                }
+            }, status=400)
+
+        uid = uuid4().hex
+        task = {
+            'title': title,
+            'id': uid,
+            'done': False,
+        }
+        DATOS.update({uid: task})
+        return json(task, status=201)
 
     def get(self, request):
         """
@@ -50,6 +53,9 @@ class TaskList(HTTPMethodView):
         return json({
             'data': DATOS,
         })
+
+    def options(self, request):
+        return json({})
 
 
 class Task(HTTPMethodView):
@@ -79,10 +85,11 @@ class Task(HTTPMethodView):
             }, status=404)
         print(request.json)
         task.update({
-            'done': True
+            'title': request.json.get('title', task['title']),
+            'done': request.json.get('done', task['done']),
         })
         DATOS.update({task['id']: task})
-        return json(task)
+        return json(task, status=201)
 
     def delete(self, request, task):
         """
@@ -90,8 +97,13 @@ class Task(HTTPMethodView):
         """
         return json({})
 
+    def options(self, request, task):
+        return json({})
 
+
+CORS(app)
 app.add_route(TaskList.as_view(), '/tasks')
+CORS(app)
 app.add_route(Task.as_view(), '/tasks/<task>')
 
 if __name__ == '__main__':
