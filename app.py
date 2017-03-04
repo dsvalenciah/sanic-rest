@@ -5,7 +5,6 @@ from uuid import uuid4
 from sanic import Sanic
 from sanic.views import HTTPMethodView
 from sanic.response import json
-from sanic_cors import CORS
 
 app = Sanic()
 
@@ -101,10 +100,18 @@ class Task(HTTPMethodView):
         return json({})
 
 
-CORS(app)
 app.add_route(TaskList.as_view(), '/tasks')
-CORS(app)
 app.add_route(Task.as_view(), '/tasks/<task>')
+
+
+@app.middleware('response')
+async def cross_site_resource_sharing(request, response):
+    allowed_methods = 'GET,POST,PUT,DELETE,OPTIONS'
+    # response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = allowed_methods
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+
 
 if __name__ == '__main__':
     app.run(
